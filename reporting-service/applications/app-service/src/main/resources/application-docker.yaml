@@ -1,0 +1,18 @@
+server:
+  port: 8080
+aws:
+  region: ${AWS_REGION}
+  dynamodb:
+    endpoint: ${AWS_DYNAMODB_ENDPOINT}
+
+services:
+  request:
+    url: ${SERVICES_REQUEST_URL}
+  auth:
+    url: ${SERVICES_AUTH_URL}
+
+app:
+  timezone: ${TIME_ZONE}
+scheduler:
+  daily-report:
+    cron: ${SCHEDULER_DAILY_REPORT_CRON}

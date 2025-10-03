@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  # Base de datos para autenticación
+  db_auth:
+    image: postgres:latest
+    container_name: db_auth
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  # Base de datos para solicitudes
+  db_request:
+    image: postgres:latest
+    container_name: db_request
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: request
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_request_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  # Base de datos para reportes (DynamoDB Local)
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    user: root
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
+    volumes:
+      - dynamodb_data:/home/dynamodblocal/data
+    working_dir: /home/dynamodblocal
+    networks:
+      - app_network
+
+  # Servicio de autenticación
+  authentication-service:
+    build:
+      context: ./authentication-service
+      dockerfile: deployment/Dockerfile
+    container_name: auth-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - ADAPTERS_R2DBC_HOST=db_auth
+      - ADAPTERS_R2DBC_PORT=5432
+      - ADAPTERS_R2DBC_DB=auth
+      - ADAPTERS_R2DBC_USER=admin
+      - ADAPTERS_R2DBC_PASS=admin
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS}
+    depends_on:
+      - db_auth
+    networks:
+      - app_network
+
+  # Servicio de solicitudes
+  request-service:
+    build:
+      context: ./request-service
+      dockerfile: deployment/Dockerfile
+    container_name: request-service
+    ports:
+      - "8090:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - ADAPTERS_R2DBC_HOST=db_request
+      - ADAPTERS_R2DBC_PORT=5432
+      - ADAPTERS_R2DBC_DB=request
+      - ADAPTERS_R2DBC_USER=admin
+      - ADAPTERS_R2DBC_PASS=admin
+      - SERVICES_AUTH_URL=http://authentication-service:8080
+      - JWT_SECRET=${JWT_SECRET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_REGION=us-east-1
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SQS_ENDEUDAMIENTO=${AWS_SQS_ENDEUDAMIENTO}
+      - AWS_SQS_NOTIFICACIONES=${AWS_SQS_NOTIFICACIONES}
+      - AWS_SQS_REPORTES=${AWS_SQS_REPORTES}
+      - AWS_SQS_RESPONSE_ENDEUDAMIENTO=${AWS_SQS_RESPONSE_ENDEUDAMIENTO}
+      - TIME_ZONE=America/Lima
+    depends_on:
+      - db_request
+      - authentication-service
+    networks:
+      - app_network
+
+    # Servicio de reportes
+  reporting-service:
+    build:
+      context: ./reporting-service
+      dockerfile: deployment/Dockerfile
+    container_name: reporting-service
+    ports:
+      - "9000:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - AWS_REGION=us-east-1
+      - AWS_DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+      - AWS_SQS_REPORTES=${AWS_SQS_REPORTES}
+      - AWS_SQS_NOTIFICACIONES=${AWS_SQS_NOTIFICACIONES}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - REPORT_EMAIL=${REPORT_EMAIL}
+      - REPORT_PASSWORD=${REPORT_PASSWORD}
+      - SERVICES_REQUEST_URL=http://request-service:8080
+      - SERVICES_AUTH_URL=http://authentication-service:8080
+      - JWT_SECRET=${JWT_SECRET}
+      - TIME_ZONE=America/Lima
+      - SCHEDULER_DAILY_REPORT_CRON=0 15 17 * * ?
+    depends_on:
+      - dynamodb-local
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_auth_data:
+  postgres_request_data:
+  dynamodb_data:

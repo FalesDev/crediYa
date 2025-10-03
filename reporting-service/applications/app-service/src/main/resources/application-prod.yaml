@@ -1,0 +1,24 @@
+server:
+  port: 8080
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+logging:
+  level:
+    root: INFO
+    co.com.pragma: INFO
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+aws:
+  region: ${AWS_REGION}
+services:
+  request:
+    url: ${SERVICES_REQUEST_URL}
+  auth:
+    url: ${SERVICES_AUTH_URL}
+
+app:
+  timezone: ${TIME_ZONE}
+scheduler:
+  daily-report:
+    cron: ${SCHEDULER_DAILY_REPORT_CRON}

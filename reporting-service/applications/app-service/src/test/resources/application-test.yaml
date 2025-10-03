@@ -1,0 +1,21 @@
+jwt:
+  secret: iqacVRQkZ3dshw8HY4viiz4Hv3y4QCLkrxa15FKOtQk=
+
+aws:
+  region: ${AWS_REGION}
+
+entrypoint:
+  sqs:
+    region: us-east-1
+    queueUrl: "test-queue-url"
+
+adapter:
+  sqs:
+    region: us-east-1
+    queues:
+      notifications: "test-notifications"
+
+job:
+  auth:
+    email: test@gmail.com
+    password: password

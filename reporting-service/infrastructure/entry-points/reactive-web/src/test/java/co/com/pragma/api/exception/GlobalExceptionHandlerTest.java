@@ -1,0 +1,94 @@
+package co.com.pragma.api.exception;
+
+import co.com.pragma.model.exception.EntityNotFoundException;
+import co.com.pragma.model.exception.TokenValidationException;
+import co.com.pragma.model.exception.UnauthorizedException;
+import co.com.pragma.model.gateways.CustomLogger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.reactive.function.server.HandlerFunction;
+import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+public class GlobalExceptionHandlerTest {
+    @Mock
+    private CustomLogger logger;
+
+    @Mock
+    private HandlerFunction<ServerResponse> next;
+
+    private GlobalExceptionHandler handler;
+
+    @BeforeEach
+    void setup() {
+        handler = new GlobalExceptionHandler(logger);
+    }
+
+    @Test
+    @DisplayName("Should return 404 Not Found when EntityNotFoundException is thrown")
+    void shouldHandleEntityNotFoundException() {
+        EntityNotFoundException ex = new EntityNotFoundException("Entity not found");
+
+        when(next.handle(any())).thenReturn(Mono.error(ex));
+
+        StepVerifier.create(handler.filter(mock(ServerRequest.class), next))
+                .expectNextMatches(response -> response.statusCode().value() == 404)
+                .verifyComplete();
+
+        verify(logger).warn(contains("Entity not found"));
+    }
+
+    @Test
+    @DisplayName("Should return 401 Unauthorized when UnauthorizedException is thrown")
+    void shouldHandleUnauthorizedException() {
+        UnauthorizedException ex = new UnauthorizedException("Authentication failed");
+
+        when(next.handle(any())).thenReturn(Mono.error(ex));
+
+        StepVerifier.create(handler.filter(mock(ServerRequest.class), next))
+                .expectNextMatches(response -> response.statusCode().value() == 401)
+                .verifyComplete();
+
+        verify(logger).warn(contains("Authentication failed"));
+    }
+
+    @Test
+    @DisplayName("Should return 401 Unauthorized when TokenValidationException is thrown")
+    void shouldHandleTokenValidationException() {
+        TokenValidationException ex = new TokenValidationException("JWT validation failed");
+
+        when(next.handle(any())).thenReturn(Mono.error(ex));
+
+        StepVerifier.create(handler.filter(mock(ServerRequest.class), next))
+                .expectNextMatches(response -> response.statusCode().value() == 401)
+                .verifyComplete();
+
+        verify(logger).warn(contains("JWT validation failed"));
+    }
+
+    @Test
+    @DisplayName("Should return 500 Internal Server Error when unexpected exception is thrown")
+    void shouldHandleGenericException() {
+        RuntimeException ex = new RuntimeException("Something went wrong");
+
+        when(next.handle(any())).thenReturn(Mono.error(ex));
+
+        StepVerifier.create(handler.filter(mock(ServerRequest.class), next))
+                .expectNextMatches(response -> response.statusCode().value() == 500)
+                .verifyComplete();
+
+        verify(logger).error(contains("Internal server error"));
+    }
+}

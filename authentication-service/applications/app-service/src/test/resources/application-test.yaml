@@ -1,0 +1,3 @@
+jwt:
+  secret: iqacVRQkZ3dshw8HY4viiz4Hv3y4QCLkrxa15FKOtQk=
+  expiration-ms: 86400000
