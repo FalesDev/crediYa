@@ -20,7 +20,7 @@
 
 ## 🎥 Demo
 
-👉 [Ver demo en YouTube](https://youtu.be/tu-video-id)
+👉 [Ver demo en YouTube](https://www.youtube.com/watch?v=9UzDRRj-vpk)
 
 En este video se muestra el flujo completo:
 
@@ -48,7 +48,7 @@ Cada uno de los microservicios fueron hechos en base a [Scaffold of Clean Archit
 
 **Arquitectura en AWS (Despliegue en la nube)**
 
-![Arquitectura AWS](https://ik.imagekit.io/dwlmxvv6k/git/CrediYaInfraestructura.png)
+![Arquitectura AWS](https://ik.imagekit.io/dwlmxvv6k/git/CrediYaInfraestructura1.png)
 
 ---
 
@@ -65,6 +65,7 @@ Cada uno de los microservicios fueron hechos en base a [Scaffold of Clean Archit
 * **Infraestructura y monitoreo**:
   - Docker + Docker Compose
   - AWS ECS Fargate + ALB + API Gateway + CloudWatch
+  - AWS Lambda (procesamiento serverless)
   - AWS Secret Manager para credenciales seguras
   - Spring Boot Actuator (health checks, métricas)
 * **Documentación**: Swagger (OpenAPI 3)
